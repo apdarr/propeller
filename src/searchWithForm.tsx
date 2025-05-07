@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Action, ActionPanel, Form, useNavigation, Detail, getPreferenceValues, Toast, showToast } from "@raycast/api";
+import { Action, ActionPanel, Form, useNavigation, Detail, getPreferenceValues, Toast, showToast, List, Icon, Color } from "@raycast/api";
 import fetch from "node-fetch";
 
 interface Preferences {
@@ -15,6 +15,31 @@ interface SearchResult {
   sourceLinks: string[];
   isLoading: boolean;
   error: string | null;
+}
+
+// Helper function to extract a title from a URL
+const getTitleFromUrl = (url: string): string => {
+  try {
+    const pathName = new URL(url).pathname;
+    const segments = pathName.split('/').filter(Boolean); // Filter out empty strings
+    if (segments.length > 0) {
+      let title = segments[segments.length - 1];
+      // Remove common extensions like .md, .html, .htm
+      title = title.replace(/\.(md|html|htm)$/i, '');
+      // Replace hyphens and underscores with spaces
+      title = title.replace(/[-_]/g, ' ');
+      // Capitalize first letter of each word
+      return title
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(' ')
+        .trim();
+    }
+    return url; // Fallback if no meaningful segment found
+  } catch (e) {
+    console.error("Error parsing URL for title:", e);
+    return url; // Fallback to full URL on error
+  }
 }
 
 export default function SearchForm() {
@@ -33,15 +58,15 @@ export default function SearchForm() {
     <Form
       actions={
         <ActionPanel>
-          <Action.SubmitForm title="Search" onSubmit={handleSubmit} />
+          <Action.SubmitForm title="Search the GitHub Docs with Copilot" onSubmit={handleSubmit} />
         </ActionPanel>
       }
     >
       <Form.TextField 
         id="query" 
-        title="Search Query" 
+        title="GitHub Docs search with Copilot" 
         placeholder="How do I configure OpenID Connect in GitHub?" 
-        info="Enter your question about GitHub"
+        info="Uses the GitHub Docs Copilot API to search github.com documentation"
         autoFocus
       />
     </Form>
@@ -55,7 +80,7 @@ function SearchResults({ query }: { query: string }) {
     isLoading: true,
     error: null
   });
-  
+
   useEffect(() => {
     const fetchResults = async () => {
       try {
@@ -216,7 +241,8 @@ function SearchResults({ query }: { query: string }) {
     if (result.sourceLinks.length > 0) {
       markdown += "## Sources\n\n";
       result.sourceLinks.forEach((link) => {
-        markdown += `- [${link}](${link})\n`;
+        const title = getTitleFromUrl(link);
+        markdown += `- 🔖 [${title || link}](${link})\n`; // Changed to bulleted list
       });
     }
   }
@@ -232,18 +258,11 @@ function SearchResults({ query }: { query: string }) {
             content={result.answer}
             shortcut={{ modifiers: ["cmd"], key: "c" }}
           />
-          {result.sourceLinks.length > 0 && (
-            <Action.OpenInBrowser
-              title="Open First Source"
-              url={result.sourceLinks[0]}
-              shortcut={{ modifiers: ["cmd"], key: "o" }}
-            />
-          )}
           <Action
             title="New Search"
             shortcut={{ modifiers: ["cmd"], key: "n" }}
             onAction={() => {
-              const { pop } = useNavigation();
+              const { pop } = useNavigation(); 
               pop();
             }}
           />
