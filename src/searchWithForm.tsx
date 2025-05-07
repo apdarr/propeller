@@ -62,7 +62,7 @@ export default function SearchForm() {
         </ActionPanel>
       }
     >
-      <Form.TextField 
+      <Form.TextArea 
         id="query" 
         title="GitHub Docs search with Copilot" 
         placeholder="How do I configure OpenID Connect in GitHub?" 
@@ -239,11 +239,14 @@ function SearchResults({ query }: { query: string }) {
     markdown += `## Answer\n\n${result.answer}\n\n`;
     
     if (result.sourceLinks.length > 0) {
-      markdown += "## Sources\n\n";
-      result.sourceLinks.forEach((link) => {
-        const title = getTitleFromUrl(link);
-        markdown += `- 🔖 [${title || link}](${link})\n`; // Changed to bulleted list
-      });
+      const uniqueSourceLinks = result.sourceLinks.filter(link => !result.answer.includes(link));
+      if (uniqueSourceLinks.length > 0) {
+        markdown += "## Sources\n\n";
+        uniqueSourceLinks.forEach((link) => {
+          const title = getTitleFromUrl(link);
+          markdown += `- 🔖 [${title || link}](${link})\n`;
+        });
+      }
     }
   }
   
