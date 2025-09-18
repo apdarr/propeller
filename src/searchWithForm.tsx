@@ -113,7 +113,8 @@ function SearchResults({ query }: { query: string }) {
           },
           body: JSON.stringify({
             query,
-            version
+            version,
+            client: "raycast-propeller"
           })
         });
 
