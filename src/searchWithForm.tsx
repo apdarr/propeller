@@ -143,6 +143,7 @@ function SearchResults({ query }: { query: string }) {
         let sourceLinks: string[] = [];
         let foundAnswer = false;
         let foundSources = false;
+        let lastChunk = ""; // Track the last chunk to avoid immediate duplicates
         
         for (const line of lines) {
           console.log("Processing line in SearchResults:", line);
@@ -151,17 +152,28 @@ function SearchResults({ query }: { query: string }) {
             console.log("Parsed data from line in SearchResults:", data);
             
             if (data.chunkType === "MESSAGE_CHUNK" && typeof data.text === 'string') {
-              answer += data.text;
-              foundAnswer = true;
-              console.log("Found MESSAGE_CHUNK segment in SearchResults:", data.text);
+              // Only skip if this chunk is exactly the same as the previous one
+              if (data.text !== lastChunk) {
+                answer += data.text;
+                lastChunk = data.text;
+                foundAnswer = true;
+                console.log("Found MESSAGE_CHUNK segment in SearchResults:", data.text);
+              } else {
+                console.log("Skipping immediate duplicate MESSAGE_CHUNK in SearchResults:", data.text);
+              }
             } else if (data.chunkType === "SOURCES" && data.sources) {
               sourceLinks = data.sources.map((source: any) => source.url);
               foundSources = true;
               console.log("Found SOURCES_CHUNK in SearchResults:", sourceLinks);
             } else if (data.type === "answer") { // Keep old logic as a fallback
-              answer += data.value;
-              foundAnswer = true;
-              console.log("Found answer segment (legacy) in SearchResults:", data.value);
+              if (data.value !== lastChunk) {
+                answer += data.value;
+                lastChunk = data.value;
+                foundAnswer = true;
+                console.log("Found answer segment (legacy) in SearchResults:", data.value);
+              } else {
+                console.log("Skipping immediate duplicate answer segment (legacy) in SearchResults:", data.value);
+              }
             } else if (data.type === "sources") { // Keep old logic as a fallback
               sourceLinks = data.value.map((source: any) => source.url);
               foundSources = true;
